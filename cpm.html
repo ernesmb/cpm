@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>CoolPlacesMap | CartoDB</title>
+	<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+	<style>
+	/*styles for the whole page*/
+	html, body {
+	  height: 100%;
+	  padding: 0;
+	  margin: 0; 
+	}
+
+	#map{
+
+	  height:80%;
+	  width:90%;
+	  margin-top:5%;
+	  margin-left:5%;
+	  margin-right:5%;
+	  margin-bottom:10%;
+	}
+
+	#form{
+		height:80%;
+		width:30%;
+		margin-left:35%;
+		margin-right:35%;
+		text-align:center;
+	}
+
+	.field{
+		margin:auto;
+		text-align:center;
+	}
+
+	#name,#address,#phone,#url,#lat,#lon,#cat,#comments{margin:auto;}
+
+	.bar{
+		height:10%;
+		width:100%;
+		text-align:center;
+		background-color:#556270;
+		color:white;
+	}
+	#toggle{
+		position:absolute;
+		top:15%;
+		right:10%;
+		display:inline;
+	}
+	#cdb_map{
+		position:absolute;
+		top:18%;
+		right:10%;
+		display:inline;		
+	}
+
+	</style>
+	<link rel="stylesheet" href="https://cartodb-libs.global.ssl.fastly.net/cartodb.js/v3/3.15/themes/css/cartodb.css" />
+</head>
+<body>
+  <button class=bar id='input' onclick="centerForm()">INPUT</button>
+
+  <div id='map'></div>
+
+  <button id='toggle' class='button'>PLACES</button>
+  <button id='cdb_map' class='button' onclick="location.href='path/to/embed_map'">MAP IN CDB</button>
+
+
+  	<button class='bar' id='goToMap' onclick="centerMap()">MAP</button>
+
+
+  	<div id="form">
+	    <div class="field">
+	        <label>NAME</label>
+	        <input id="name" type="text" value="">
+	    </div>
+	    <div class="field">
+	        <label>ADDRESS</label>
+	        <input id="address" type="text" value="">
+	    </div>
+	    <div class="field">
+	        <label>PHONE</label>
+	        <input id="phone" type="number" value=0034>
+	    </div>
+	    <div class="field">
+	        <label>URL</label>
+	        <input id="url" type="text" value="">
+	    </div>
+	    <div class="field">
+	        <label>Lat</label>
+	        <input id="lat" type="number" value="">
+	    </div>
+	    <div class="field">
+	        <label>Lon</label>
+	        <input id="lon" type="number" value="">
+	    </div>
+	    <div class="field">
+	        <label>CATEGORY</label>
+	        <select id="cat" value="">
+	            <option>Drink</option>
+	            <option>Food</option>
+	            <option>Store</option>
+	            <option>Other</option>
+	        </select>
+	    </div>
+	    <div class="field">
+	        <label>COMMENTS</label>
+	        <textarea rows="7" id="comments"></textarea>
+	    </div>
+	</div>
+	<button class='bar' id='send' onclick='sendPlace()'>SEND!</button>
+
+  <script src="https://cartodb-libs.global.ssl.fastly.net/cartodb.js/v3/3.15/cartodb.js"></script> 
+  
+  <script>
+  //code
+  var vizjson=//add viz.json url
+  var embed_map=//add embed map url
+  var api_key=//add apikey
+  var table_name=//add table name
+  var new_loc;
+
+  function main(){
+
+
+  var map=L.map('map',{
+	center:[36.0,-2.0],
+	zoom:5,
+	scrollWheelZoom:false
+  });
+	
+  L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{}).addTo(map);
+
+  map.locate({setView:true, watch:false})
+  .on('locationfound', function(l){
+	var loc=L.circleMarker(l.latlng, {stroke:true, color:'#019',weight:0.5,fillOpacity:0.1,radius:8}).addTo(map);
+	if(l.accuracy<1000){
+	    L.circle(l.latlng,l.accuracy,{stroke:true, color:'#00F',weight:0.5,fillOpacity:0}).addTo(map);
+	}
+	else{
+		console.log('Accuracy >1000m: '+l.accuracy);
+	}
+  })
+  .on('click', function(e){
+  	console.log(e);
+  	var lat=e.latlng.lat;
+  	var lon=e.latlng.lng;
+  	$('#lat').val(lat);
+  	$('#lon').val(lon);
+  	if(typeof new_loc!='undefined'){
+  		map.removeLayer(new_loc);
+	  	new_loc=L.circleMarker(e.latlng,{stroke:false, color:'#C10',weight:0.5,fillOpacity:0.4,radius:6} ).addTo(map);
+	}else{
+		new_loc=L.circleMarker(e.latlng,{stroke:false, color:'#C10',weight:0.5,fillOpacity:0.4,radius:6} ).addTo(map);
+	}
+	window.map=map;
+  	//centerForm();
+  });
+
+  var cdb_map=cartodb.createLayer(map,vizjson,
+  {
+  	//options
+  	https:true,
+  	interactivity:false
+  })
+  .addTo(map)
+  .on('done', function(l){
+  	l.hide();
+  	$('#toggle').click(function(){
+        l.redraw();
+  		l.toggle();
+  	});
+  });
+
+}//END main()
+
+function centerForm(){
+	view=document.getElementById("goToMap");
+	view.scrollIntoView();
+}
+function centerMap(){
+	view=document.getElementById("input");
+	view.scrollIntoView();
+}
+function sendPlace(){
+
+	var name=$('#name').val();
+	var address=$('#address').val();
+	var phone=parseInt($('#phone').val());
+	var url=$('#url').val();
+	var lat=$('#lat').val();
+	var lon=$('#lon').val();
+	var cat=$('#cat').val();
+	var comments=$('#comments').val();
+	console.log(name+" "+address+" "+phone+" "+url+" "+lat+" "+lon+" "+cat+" "+comments)
+
+	var sql=new cartodb.SQL({user:'coolplacesmap', api_key:apikey});
+	sql.execute("INSERT INTO "+table_name+" (the_geom,name,address,phone,url,lat,lon,cat,comments) VALUES (ST_SetSRID(ST_MakePoint("+lon+","+lat+"),4326),'"+name+"', '"+address+"', "+phone+", '"+url+"', "+lat+", "+lon+", '"+cat+"' , '"+comments+"')")
+	.done(function(){
+		//stuff
+		console.log("sent!");
+		$('#name').val("");
+		$('#address').val("");
+		$('#phone').val('0034');
+		$('#url').val("");
+		$('#lat').val("");
+		$('#lon').val("");
+		$('#cat').val("");
+		$('#comments').val("");
+		map.removeLayer(new_loc);
+
+	})
+	.error(function(e){
+		console.log("error sending place:</br>"+e);
+		window.alert("error sending place: "+e)
+	});
+
+}
+
+window.onload=main;
+
+  </script>
+
+</body>
+</html>
