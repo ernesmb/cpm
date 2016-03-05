@@ -66,7 +66,7 @@
   <div id='map'></div>
 
   <button id='toggle' class='button'>PLACES</button>
-  <button id='cdb_map' class='button' onclick="location.href='path/to/embed_map'">MAP IN CDB</button>
+  <button id='cdb_map' class='button' onclick="openCDBMap()">MAP IN CDB</button>
 
 
   	<button class='bar' id='goToMap' onclick="centerMap()">MAP</button>
@@ -83,7 +83,7 @@
 	    </div>
 	    <div class="field">
 	        <label>PHONE</label>
-	        <input id="phone" type="number" value=0034>
+	        <input id="phone" type="number" value=0>
 	    </div>
 	    <div class="field">
 	        <label>URL</label>
@@ -117,8 +117,9 @@
   
   <script>
   //code
-  var vizjson=//add viz.json url
-  var embed_map=//add embed map url
+  var username=//cartodb username
+  var layerSource=//add viz.json url
+  var embed_map=add embed map url
   var api_key=//add apikey
   var table_name=//add table name
   var new_loc;
@@ -160,8 +161,7 @@
   	//centerForm();
   });
 
-  var cdb_map=cartodb.createLayer(map,vizjson,
-  {
+  var cdb_map=cartodb.createLayer(map, layerSource,{
   	//options
   	https:true,
   	interactivity:false
@@ -185,6 +185,9 @@ function centerMap(){
 	view=document.getElementById("input");
 	view.scrollIntoView();
 }
+function openCDBMap(){
+	location.href=embed_map;
+}
 function sendPlace(){
 
 	var name=$('#name').val();
@@ -197,14 +200,14 @@ function sendPlace(){
 	var comments=$('#comments').val();
 	console.log(name+" "+address+" "+phone+" "+url+" "+lat+" "+lon+" "+cat+" "+comments)
 
-	var sql=new cartodb.SQL({user:'coolplacesmap', api_key:apikey});
+	var sql=new cartodb.SQL({user:username, api_key:api_key});
 	sql.execute("INSERT INTO "+table_name+" (the_geom,name,address,phone,url,lat,lon,cat,comments) VALUES (ST_SetSRID(ST_MakePoint("+lon+","+lat+"),4326),'"+name+"', '"+address+"', "+phone+", '"+url+"', "+lat+", "+lon+", '"+cat+"' , '"+comments+"')")
 	.done(function(){
 		//stuff
 		console.log("sent!");
 		$('#name').val("");
 		$('#address').val("");
-		$('#phone').val('0034');
+		$('#phone').val('0');
 		$('#url').val("");
 		$('#lat').val("");
 		$('#lon').val("");
